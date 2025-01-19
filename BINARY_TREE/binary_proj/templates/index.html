@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Binary Tree Visualizer</title>
+    <style>
+          body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(to bottom, #b2f2bb, #69db7c);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            background: white;
+            width: 100%;
+            max-width: 750px;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        h1 {
+            color: #2c3e50;
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        .instruction {
+            color: #555;
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+        }
+        .input-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        input {
+            padding: 12px;
+            width: 90%;
+            max-width: 300px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+            margin-bottom: 10px;
+            transition: border-color 0.3s ease;
+        }
+        input:focus {
+            border-color: #38d9a9;
+            outline: none;
+        }
+        .input-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        button {
+            padding: 12px 20px;
+            font-size: 14px;
+            border: none;
+            border-radius: 8px;
+            background-color: #38d9a9;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s;
+        }
+        button:hover {
+            background-color: #20c997;
+            transform: translateY(-2px);
+        }
+        .tree-visualization {
+            padding: 20px;
+            margin-top: 20px;
+            background: #f9fefb;
+            border-radius: 12px;
+            border: 1px solid #e1f5e6;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .node {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #38d9a9, #20c997);
+            color: white;
+            font-weight: bold;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 40px;
+            margin: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        .level {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+        .traversal-section {
+            background: #f9fefb;
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #e1f5e6;
+        }
+        .traversal-result {
+            text-align: left;
+            font-size: 0.95rem;
+            color: #555;
+            margin-bottom: 10px;
+        }
+        .traversal-result strong {
+            color: #2c3e50;
+        }
+        .search-result {
+            margin-top: 20px;
+            padding: 15px;
+            font-size: 1rem;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .match {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .no-match {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌳 Interactive Binary Tree Visualizer 🌳 </h1>
+        <p class="instruction">Enter any text or number to build your binary tree. You can visualize the tree structure and see different traversal orders.</p>
+        
+        <div class="input-section">
+            <input type="text" id="valueInput" placeholder="Enter text or number">
+            <div class="input-group">
+                <button onclick="insertValue()">Insert Value</button>
+                <button onclick="searchValue()">Search Value</button>
+                <button onclick="clearTree()">Clear Tree</button> <!-- New button -->
+            </div>
+        </div>
+
+        <div class="tree-visualization" id="treeVisualization">
+            <p>Your tree visualization will appear here</p>
+        </div>
+
+        <div class="traversal-section">
+            <h3>Tree Traversals</h3>
+            <div id="traversalResults">
+                <div class="traversal-result">
+                    <strong>Preorder:</strong> <span id="preorder"></span>
+                </div>
+                <div class="traversal-result">
+                    <strong>Inorder:</strong> <span id="inorder"></span>
+                </div>
+                <div class="traversal-result">
+                    <strong>Postorder:</strong> <span id="postorder"></span>
+                </div>
+            </div>
+        </div>
+
+        <div id="searchResult" class="search-result"></div>
+    </div>
+
+    <script>
+        async function insertValue() {
+            const input = document.getElementById('valueInput');
+            const value = input.value;
+            
+            if (!value.trim()) {
+                alert('Please enter a value');
+                return;
+            }
+
+            try {
+                const response = await fetch('/insert', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ value: value })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    visualizeTree(data.tree);
+                    updateTraversals(data.traversals);
+                    input.value = '';
+                } else {
+                    alert(data.error || 'An error occurred');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred while inserting the value');
+            }
+        }
+
+        async function searchValue() {
+            const input = document.getElementById('valueInput');
+            const value = input.value;
+            
+            if (!value.trim()) {
+                alert('Please enter a value to search');
+                return;
+            }
+
+            try {
+                const response = await fetch('/search', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ value: value })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    const searchResult = document.getElementById('searchResult');
+                    searchResult.textContent = data.message;
+                    searchResult.className = 'search-result ' + (data.found ? 'match' : 'no-match');
+                } else {
+                    alert(data.error || 'An error occurred');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred while searching');
+            }
+        }
+
+        async function clearTree() {
+            try {
+                const response = await fetch('/clear', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    document.getElementById('treeVisualization').innerHTML = '<p>Your tree visualization will appear here</p>';
+                    document.getElementById('preorder').textContent = '';
+                    document.getElementById('inorder').textContent = '';
+                    document.getElementById('postorder').textContent = '';
+                    document.getElementById('searchResult').textContent = '';
+                    document.getElementById('searchResult').className = 'search-result';
+                } else {
+                    alert(data.error || 'An error occurred');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred while clearing the tree');
+            }
+        }
+
+        function visualizeTree(treeData) {
+            const visualization = document.getElementById('treeVisualization');
+            visualization.innerHTML = '';
+            
+            const levelMap = new Map();
+            treeData.forEach(node => {
+                if (!levelMap.has(node.level)) {
+                    levelMap.set(node.level, []);
+                }
+                levelMap.get(node.level).push(node.value);
+            });
+            
+            levelMap.forEach((values, level) => {
+                const levelDiv = document.createElement('div');
+                levelDiv.className = 'level';
+                
+                values.forEach(value => {
+                    const nodeDiv = document.createElement('div');
+                    nodeDiv.className = 'node';
+                    nodeDiv.textContent = value;
+                    levelDiv.appendChild(nodeDiv);
+                });
+                
+                visualization.appendChild(levelDiv);
+            });
+        }
+
+        function updateTraversals(traversals) {
+            document.getElementById('preorder').textContent = traversals.preorder.join(' → ');
+            document.getElementById('inorder').textContent = traversals.inorder.join(' → ');
+            document.getElementById('postorder').textContent = traversals.postorder.join(' → ');
+        }
+
+        document.getElementById('valueInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                insertValue();
+            }
+        });
+    </script>
+</body>
+</html>
